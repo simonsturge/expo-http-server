@@ -1,0 +1,9 @@
+{
+	"platforms": ["ios", "android"],
+	"ios": {
+		"modules": ["ExpoHttpServerModule"]
+	},
+	"android": {
+		"modules": ["expo.modules.httpserver.ExpoHttpServerModule"]
+	}
+}
