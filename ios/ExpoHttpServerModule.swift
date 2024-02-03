@@ -56,13 +56,15 @@ public class ExpoHttpServerModule: Module {
         }, recursive: false, method: CRHTTPMethod.fromString(method))
     }
     
-    private func respondHandler(udid: String, status: Int, body: String?, rawString: String?) {
+    private func respondHandler(udid: String,
+                                statusCode: Int,
+                                contentType: String,
+                                body: String) {
        if let response = responses[udid] {
-           if let rawString = rawString {
-               response.send(rawString);
-           } else {
-               response.send(["status": status, "body": body ?? "Success"])
-           }
+           response.setStatusCode(UInt(statusCode), description: "Success")
+           response.setValue(contentType, forHTTPHeaderField: "Content-type")
+           response.setValue("\(body.count)", forHTTPHeaderField: "Content-Length")
+           response.send(body);
            responses[udid] = nil;
        }
     }

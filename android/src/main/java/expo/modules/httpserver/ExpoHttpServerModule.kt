@@ -13,7 +13,9 @@ import org.json.JSONObject
 import java.util.UUID
 
 class ExpoHttpServerModule : Module() {
-  class SimpleHttpResponse(val status: Int, val body: String?, val rawString: String?)
+  class SimpleHttpResponse(val statusCode: Int,
+                           val contentType: String,
+                           val body: String)
 
   private lateinit var server: Server
   private val responses = HashMap<String, SimpleHttpResponse>()
@@ -37,13 +39,10 @@ class ExpoHttpServerModule : Module() {
     }
     val res = responses[uuid]!!
     responses.remove(uuid);
-    if (!res.rawString.isNullOrEmpty()) {
-      response.setStatus(res.status).setBodyText(res.rawString)
-    } else if (!res.body.isNullOrEmpty()) {
-      response.setStatus(res.status).setBodyJson(res.body)
-    } else {
-      response.setStatus(200).setBodyText("Success")
-    }
+    response.setBodyText(res.body)
+    response.setStatus(res.statusCode)
+    response.addHeader("Content-Length", "" + res.body.length)
+    response.addHeader("Content-Type", res.contentType)
   }
 
   override fun definition() = ModuleDefinition {
@@ -68,8 +67,11 @@ class ExpoHttpServerModule : Module() {
       server.start()
     }
 
-    Function("respond") { uuid: String, status: Int, body: String, rawString: String ->
-      responses[uuid] = SimpleHttpResponse(status, body, rawString)
+    Function("respond") { uuid: String,
+                          statusCode: Int,
+                          contentType: String,
+                          body: String ->
+      responses[uuid] = SimpleHttpResponse(statusCode, contentType, body);
     }
 
     Function("stop") {

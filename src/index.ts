@@ -3,6 +3,7 @@ import { EventEmitter } from "expo-modules-core";
 import ExpoHttpServerModule from "./ExpoHttpServerModule";
 
 const emitter = new EventEmitter(ExpoHttpServerModule);
+const requestCallbacks: Callback[] = [];
 
 export type HttpMethod = "GET" | "POST" | "PUT" | "DELETE";
 
@@ -16,23 +17,17 @@ export interface RequestEvent {
   cookiesJson: string;
 }
 
+export interface Response {
+  statusCode?: number;
+  contentType?: string;
+  body?: string;
+}
+
 export interface Callback {
   method: string;
   path: string;
   callback: (request: RequestEvent) => Promise<Response>;
 }
-
-const requestCallbacks: Callback[] = [];
-
-export interface Response {
-  status: number;
-  body?: string;
-  rawString?: string;
-}
-
-export const setup = (port: number) => {
-  ExpoHttpServerModule.setup(port);
-};
 
 export const start = () => {
   ExpoHttpServerModule.start();
@@ -53,9 +48,9 @@ export const start = () => {
       const response = await c.callback(event);
       ExpoHttpServerModule.respond(
         event.uuid,
-        response.status,
-        response.body || "",
-        response.rawString || "",
+        response.statusCode || 200,
+        response.contentType || "application/json",
+        response.body || "{}",
       );
     }
   });
@@ -74,4 +69,5 @@ export const route = (
   ExpoHttpServerModule.route(path, method);
 };
 
+export const setup = (port: number) => ExpoHttpServerModule.setup(port);
 export const stop = () => ExpoHttpServerModule.stop();

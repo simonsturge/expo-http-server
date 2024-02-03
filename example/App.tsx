@@ -5,18 +5,38 @@ import { Text, View } from "react-native";
 export default function App() {
   const [lastCalled, setLastCalled] = useState<number | undefined>();
 
+  const html = `
+	<!DOCTYPE html>
+	<html>
+		<body style="background-color:powderblue;">
+			<h1>expo-http-server</h1>
+			<p>You can load HTML!</p>
+		</body>
+	</html>`;
+
+  const obj = { app: "expo-http-server", desc: "You can load JSON!" };
+
   useEffect(() => {
     server.setup(9666);
     server.route("/", "GET", async (request) => {
       console.log("Request", "/", "GET", JSON.stringify(request));
       setLastCalled(Date.now());
       return {
-        status: 200,
-        rawString: "Hello World",
+        statusCode: 200,
+        contentType: "application/json",
+        body: JSON.stringify(obj),
+      };
+    });
+    server.route("/html", "GET", async (request) => {
+      console.log("Request", "/html", "GET", JSON.stringify(request));
+      setLastCalled(Date.now());
+      return {
+        statusCode: 200,
+        contentType: "text/html",
+        body: html,
       };
     });
     server.start();
-
     return () => {
       server.stop();
     };
