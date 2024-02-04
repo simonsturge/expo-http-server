@@ -88,7 +88,7 @@ export default function App() {
 
 ```
 
-Not that on iOS when the app is backgrounded the server will inevitably get paused. A background task will be started automatically, however you will likely only get 30 seconds of listening time in the background.
+Note that on iOS when the app is backgrounded the server will inevitably get paused. A background task will be started automatically, however you will likely only get 30 seconds of listening time in the background.
 
 Send a request to the server in a browser `browser` or `curl`:
 
