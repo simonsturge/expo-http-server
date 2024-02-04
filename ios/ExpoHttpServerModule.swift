@@ -43,11 +43,15 @@ public class ExpoHttpServerModule: Module {
     private func routeHandler(path: String, method: String) {
         server.add(path, block: { [weak self] (req, res, next) in
             let uuid = UUID().uuidString
+            var bodyString = "{}"
+            if let body = req.body, let bodyData = try? JSONSerialization.data(withJSONObject: body) {
+                bodyString = String(data: bodyData, encoding: .utf8) ?? "{}"
+            }
             self?.sendEvent("onRequest", [
                 "uuid": uuid,
                 "method": req.method.toString(),
                 "path": path,
-                "body": req.body,
+                "body": bodyString,
                 "headersJson": req.allHTTPHeaderFields.jsonString,
                 "paramsJson": req.query.jsonString,
                 "cookiesJson": req.cookies?.jsonString ?? "{}"
@@ -61,7 +65,7 @@ public class ExpoHttpServerModule: Module {
                                 contentType: String,
                                 body: String) {
        if let response = responses[udid] {
-           response.setStatusCode(UInt(statusCode), description: "Success")
+           response.setStatusCode(UInt(statusCode), description: "ExpoHttpServer")
            response.setValue(contentType, forHTTPHeaderField: "Content-type")
            response.setValue("\(body.count)", forHTTPHeaderField: "Content-Length")
            response.send(body);
