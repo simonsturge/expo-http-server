@@ -19,7 +19,7 @@ export default function App() {
   useEffect(() => {
     server.setup(9666);
     server.route("/", "GET", async (request) => {
-      console.log("Request", "/", "GET", JSON.stringify(request));
+      console.log("Request", "/", "GET", request);
       setLastCalled(Date.now());
       return {
         statusCode: 200,
@@ -28,7 +28,7 @@ export default function App() {
       };
     });
     server.route("/html", "GET", async (request) => {
-      console.log("Request", "/html", "GET", JSON.stringify(request));
+      console.log("Request", "/html", "GET", request);
       setLastCalled(Date.now());
       return {
         statusCode: 200,

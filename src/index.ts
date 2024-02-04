@@ -11,7 +11,7 @@ export interface RequestEvent {
   uuid: string;
   method: string;
   path: string;
-  content: string;
+  body: string;
   headersJson: string;
   paramsJson: string;
   cookiesJson: string;

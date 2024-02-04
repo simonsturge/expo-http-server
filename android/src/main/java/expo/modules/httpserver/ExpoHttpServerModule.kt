@@ -29,7 +29,7 @@ class ExpoHttpServerModule : Module() {
       "uuid" to uuid,
       "method" to request.method().name,
       "path" to request.url(),
-      "content" to request.content(),
+      "body" to request.content(),
       "headersJson" to JSONObject(headers).toString(),
       "paramsJson" to JSONObject(params).toString(),
       "cookiesJson" to JSONObject(cookies).toString(),
