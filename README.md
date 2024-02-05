@@ -43,7 +43,13 @@ export default function App() {
   const obj = { app: "expo-http-server", desc: "You can load JSON!" };
 
   useEffect(() => {
-    server.setup(9666);
+    server.setup(9666, (event: server.StatusEvent) => {
+      if (event.status === "ERROR") {
+        // there was an error...
+      } else {
+        // server was STARTED, PAUSED, RESUMED or STOPPED
+      }
+    });
     server.route("/", "GET", async (request) => {
       console.log("Request", "/", "GET", JSON.stringify(request));
       setLastCalled(Date.now());
@@ -88,7 +94,12 @@ export default function App() {
 
 ```
 
-Note that on iOS when the app is backgrounded the server will inevitably get paused. A background task will be started automatically, however you will likely only get 30 seconds of listening time in the background.
+## Running in the background
+**iOS**: When the app is backgrounded the server will inevitably get paused. There is no getting around this. expo-http-server will start a  [background task](https://developer.apple.com/documentation/uikit/uiapplication/1623031-beginbackgroundtask) that should provide a bit more background time, but this will only be ~25 seconds, which could be lowered by Apple in the future. expo-http-server will automatically pause the server when the time runs out, and resume it when the app is resumed.
+
+**Android**: The server can be ran continuously in the background using a foreground service, e.g. a persistent notification. [Notifee](https://notifee.app/react-native/docs/android/foreground-service#building-a-long-lived-task) can be used to do this. Take a look at the example project for how to set this up.
+
+## Testing
 
 Send a request to the server in a browser `browser` or `curl`:
 

@@ -17,7 +17,7 @@ class ExpoHttpServerModule : Module() {
                            val contentType: String,
                            val body: String)
 
-  private lateinit var server: Server
+  private var server: Server? = null;
   private val responses = HashMap<String, SimpleHttpResponse>()
 
   private val requestHandler: RequestHandler = { request: Request, response: Response ->
@@ -49,7 +49,7 @@ class ExpoHttpServerModule : Module() {
 
     Name("ExpoHttpServer")
 
-    Events("onRequest")
+    Events("onStatusUpdate", "onRequest")
 
     Function("setup") { port: Int ->
       server = AndroidServer.Builder{
@@ -60,11 +60,22 @@ class ExpoHttpServerModule : Module() {
     }
 
     Function("route") { path: String, method: String ->
-      server = server.request(HttpMethod.getMethod(method), path, requestHandler);
+      server = server?.request(HttpMethod.getMethod(method), path, requestHandler);
     }
 
     Function("start") {
-      server.start()
+      if (server == null) {
+        sendEvent("onStatusUpdate", bundleOf(
+          "status" to "ERROR",
+          "message" to "Server not setup / port not configured"
+        ))
+      } else {
+        server?.start()
+        sendEvent("onStatusUpdate", bundleOf(
+          "status" to "STARTED",
+          "message" to "Server started"
+        ))
+      }
     }
 
     Function("respond") { uuid: String,
@@ -75,7 +86,11 @@ class ExpoHttpServerModule : Module() {
     }
 
     Function("stop") {
-      server.close()
+      server?.close()
+      sendEvent("onStatusUpdate", bundleOf(
+        "status" to "STOPPED",
+        "message" to "Server stopped"
+      ))
     }
   }
 }

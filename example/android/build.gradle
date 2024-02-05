@@ -32,6 +32,9 @@ allprojects {
             // Android JSC is installed from npm
             url(new File(['node', '--print', "require.resolve('jsc-android/package.json', { paths: [require.resolve('react-native/package.json')] })"].execute(null, rootDir).text.trim(), '../dist'))
         }
+        maven {
+            url "$rootDir/../node_modules/@notifee/react-native/android/libs"
+        }
 
         google()
         mavenCentral()

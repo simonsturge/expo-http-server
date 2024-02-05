@@ -6,6 +6,15 @@ const emitter = new EventEmitter(ExpoHttpServerModule);
 const requestCallbacks: Callback[] = [];
 
 export type HttpMethod = "GET" | "POST" | "PUT" | "DELETE";
+/**
+ * PAUSED AND RESUMED are iOS only
+ */
+export type Status = "STARTED" | "PAUSED" | "RESUMED" | "STOPPED" | "ERROR";
+
+export interface StatusEvent {
+  status: Status;
+  message: string;
+}
 
 export interface RequestEvent {
   uuid: string;
@@ -30,7 +39,6 @@ export interface Callback {
 }
 
 export const start = () => {
-  ExpoHttpServerModule.start();
   emitter.addListener<RequestEvent>("onRequest", async (event) => {
     const callbacks = requestCallbacks.filter(
       (c) => event.path === c.path && event.method === c.method,
@@ -54,6 +62,7 @@ export const start = () => {
       );
     }
   });
+  ExpoHttpServerModule.start();
 };
 
 export const route = (
@@ -69,5 +78,16 @@ export const route = (
   ExpoHttpServerModule.route(path, method);
 };
 
-export const setup = (port: number) => ExpoHttpServerModule.setup(port);
+export const setup = (
+  port: number,
+  onStatusUpdate?: (event: StatusEvent) => void,
+) => {
+  if (onStatusUpdate) {
+    emitter.addListener<StatusEvent>("onStatusUpdate", async (event) => {
+      onStatusUpdate(event);
+    });
+  }
+  ExpoHttpServerModule.setup(port);
+};
+
 export const stop = () => ExpoHttpServerModule.stop();

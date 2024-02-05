@@ -4,13 +4,14 @@ import Criollo
 public class ExpoHttpServerModule: Module {
     private let server = CRHTTPServer()
     private var port: Int?
+    private var stopped = false
     private var responses = [String: CRResponse]()
     private var bgTaskIdentifier = UIBackgroundTaskIdentifier.invalid
     
     public func definition() -> ModuleDefinition {
         Name("ExpoHttpServer")
 
-        Events("onRequest")
+        Events("onStatusUpdate", "onRequest")
         
         Function("setup", setupHandler)
         Function("start", startHandler)
@@ -20,24 +21,17 @@ public class ExpoHttpServerModule: Module {
     }
     
     private func setupHandler(port: Int) {
-        NotificationCenter.default.addObserver(forName: UIApplication.willEnterForegroundNotification, object: nil, queue: .main) { [unowned self] notification in
-            if (self.server.isListening) {
-                self.endBackgroundTask()
-                self.beginBackgroundTask()
-            }
-        }
         self.port = port;
     }
 
     private func startHandler() {
-        if (server.isListening) { return }
-        beginBackgroundTask()
-        var error: NSError?
-        if let port = port {
-            server.startListening(&error, portNumber: UInt(port))
-        } else {
-            server.startListening(&error)
+        NotificationCenter.default.addObserver(forName: UIApplication.willEnterForegroundNotification, object: nil, queue: .main) { [unowned self] notification in
+            if (!self.stopped) {
+                self.startServer(status: "RESUMED", message: "Server resumed")
+            }
         }
+        stopped = false;
+        startServer(status: "STARTED", message: "Server started")
     }
     
     private func routeHandler(path: String, method: String) {
@@ -74,16 +68,52 @@ public class ExpoHttpServerModule: Module {
     }
     
     private func stopHandler() {
+        stopped = true;
+        stopServer(status: "STOPPED", message: "Server stopped")
+    }
+        
+    private func startServer(status: String, message: String) {
+        stopServer()
+        if let port = port {
+            var error: NSError?
+            server.startListening(&error, portNumber: UInt(port))
+            if (error != nil) {
+                sendEvent("onStatusUpdate", [
+                    "status": "ERROR",
+                    "message": error?.localizedDescription ?? "Unknown error starting server"
+                ])
+            } else {
+                beginBackgroundTask()
+                sendEvent("onStatusUpdate", [
+                    "status": status,
+                    "message": message
+                ])
+            }
+        } else {
+            sendEvent("onStatusUpdate", [
+                "status": "ERROR",
+                "message": "Can't start server with port configured"
+            ])
+        }
+    }
+    
+    private func stopServer(status: String? = nil, message: String? = nil) {
         if (server.isListening) {
             server.stopListening()
-            endBackgroundTask()
+        }
+        endBackgroundTask()
+        if let status = status, let message = message {
+            sendEvent("onStatusUpdate", [
+                "status": status,
+                "message": message
+            ])
         }
     }
     
     private func beginBackgroundTask() {
         if (bgTaskIdentifier == UIBackgroundTaskIdentifier.invalid) {
             self.bgTaskIdentifier = UIApplication.shared.beginBackgroundTask(withName: "BgTask", expirationHandler: {
-                self.endBackgroundTask()
+                self.stopServer(status: "PAUSED", message: "Server paused")
             })
         }
     }
