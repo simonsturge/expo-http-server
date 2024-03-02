@@ -98,9 +98,7 @@ public class ExpoHttpServerModule: Module {
     }
     
     private func stopServer(status: String? = nil, message: String? = nil) {
-        if (server.isListening) {
-            server.stopListening()
-        }
+        server.stopListening()
         endBackgroundTask()
         if let status = status, let message = message {
             sendEvent("onStatusUpdate", [
