@@ -14,8 +14,6 @@ iOS: [Criollo](https://github.com/thecatalinstan/Criollo)
 Android: [AndroidServer](https://github.com/fengzhizi715/AndroidServer)
 Web: **Not implemented**
 
-This is a work in progress and not yet used in a production app (there are surely things I've overlooked), but please do make a PR for any improvements / problems you can see!
-
 ## Install
 
 ```shell
