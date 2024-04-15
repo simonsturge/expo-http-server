@@ -5,7 +5,7 @@ public class ExpoHttpServerModule: Module {
     private let server = CRHTTPServer()
     private var port: Int?
     private var stopped = false
-    private var responses = [String: CRResponse]()
+    private var responses: [String: CRResponse]?
     private var bgTaskIdentifier = UIBackgroundTaskIdentifier.invalid
     
     public func definition() -> ModuleDefinition {
@@ -36,12 +36,13 @@ public class ExpoHttpServerModule: Module {
     
     private func routeHandler(path: String, method: String) {
         server.add(path, block: { [weak self] (req, res, next) in
+            guard let strongSelf = self else { return }
             let uuid = UUID().uuidString
             var bodyString = "{}"
             if let body = req.body, let bodyData = try? JSONSerialization.data(withJSONObject: body) {
                 bodyString = String(data: bodyData, encoding: .utf8) ?? "{}"
             }
-            self?.sendEvent("onRequest", [
+            strongSelf.sendEvent("onRequest", [
                 "uuid": uuid,
                 "method": req.method.toString(),
                 "path": path,
@@ -50,7 +51,12 @@ public class ExpoHttpServerModule: Module {
                 "paramsJson": req.query.jsonString,
                 "cookiesJson": req.cookies?.jsonString ?? "{}"
             ])
-            self?.responses[uuid] = res
+            DispatchQueue.main.async {
+                if (strongSelf.responses == nil) {
+                    strongSelf.responses = [:];
+                }
+                strongSelf.responses?[uuid] = res
+            }
         }, recursive: false, method: CRHTTPMethod.fromString(method))
     }
     
@@ -58,12 +64,14 @@ public class ExpoHttpServerModule: Module {
                                 statusCode: Int,
                                 contentType: String,
                                 body: String) {
-       if let response = responses[udid] {
+       if let responses = responses, let response = responses[udid] {
            response.setStatusCode(UInt(statusCode), description: "ExpoHttpServer")
            response.setValue(contentType, forHTTPHeaderField: "Content-type")
            response.setValue("\(body.count)", forHTTPHeaderField: "Content-Length")
            response.send(body);
-           responses[udid] = nil;
+           DispatchQueue.main.async {
+               self.responses?[udid] = nil;
+           }
        }
     }
     
@@ -73,6 +81,7 @@ public class ExpoHttpServerModule: Module {
     }
         
     private func startServer(status: String, message: String) {
+        responses = [:];
         stopServer()
         if let port = port {
             var error: NSError?
