@@ -5,7 +5,7 @@ public class ExpoHttpServerModule: Module {
     private let server = CRHTTPServer()
     private var port: Int?
     private var stopped = false
-    private var responses: [String: CRResponse]?
+    private var responses = [String: CRResponse]()
     private var bgTaskIdentifier = UIBackgroundTaskIdentifier.invalid
     
     public func definition() -> ModuleDefinition {
@@ -35,27 +35,23 @@ public class ExpoHttpServerModule: Module {
     }
     
     private func routeHandler(path: String, method: String) {
-        server.add(path, block: { [weak self] (req, res, next) in
-            guard let strongSelf = self else { return }
-            let uuid = UUID().uuidString
-            var bodyString = "{}"
-            if let body = req.body, let bodyData = try? JSONSerialization.data(withJSONObject: body) {
-                bodyString = String(data: bodyData, encoding: .utf8) ?? "{}"
-            }
-            strongSelf.sendEvent("onRequest", [
-                "uuid": uuid,
-                "method": req.method.toString(),
-                "path": path,
-                "body": bodyString,
-                "headersJson": req.allHTTPHeaderFields.jsonString,
-                "paramsJson": req.query.jsonString,
-                "cookiesJson": req.cookies?.jsonString ?? "{}"
-            ])
+        server.add(path, block: { (req, res, next) in
             DispatchQueue.main.async {
-                if (strongSelf.responses == nil) {
-                    strongSelf.responses = [:];
+                let uuid = UUID().uuidString
+                var bodyString = "{}"
+                if let body = req.body, let bodyData = try? JSONSerialization.data(withJSONObject: body) {
+                    bodyString = String(data: bodyData, encoding: .utf8) ?? "{}"
                 }
-                strongSelf.responses?[uuid] = res
+                self.responses[uuid] = res
+                self.sendEvent("onRequest", [
+                    "uuid": uuid,
+                    "method": req.method.toString(),
+                    "path": path,
+                    "body": bodyString,
+                    "headersJson": req.allHTTPHeaderFields.jsonString,
+                    "paramsJson": req.query.jsonString,
+                    "cookiesJson": req.cookies?.jsonString ?? "{}"
+                ])
             }
         }, recursive: false, method: CRHTTPMethod.fromString(method))
     }
@@ -64,15 +60,16 @@ public class ExpoHttpServerModule: Module {
                                 statusCode: Int,
                                 contentType: String,
                                 body: String) {
-       if let responses = responses, let response = responses[udid] {
-           response.setStatusCode(UInt(statusCode), description: "ExpoHttpServer")
-           response.setValue(contentType, forHTTPHeaderField: "Content-type")
-           response.setValue("\(body.count)", forHTTPHeaderField: "Content-Length")
-           response.send(body);
-           DispatchQueue.main.async {
-               self.responses?[udid] = nil;
-           }
-       }
+        DispatchQueue.main.async {
+            if let response = self.responses[udid] {
+                response.setStatusCode(UInt(statusCode), description: "ExpoHttpServer")
+                response.setValue(contentType, forHTTPHeaderField: "Content-type")
+                response.setValue("\(body.count)", forHTTPHeaderField: "Content-Length")
+                response.send(body);
+                self.responses[udid] = nil;
+            }
+        }
+       
     }
     
     private func stopHandler() {
@@ -81,7 +78,6 @@ public class ExpoHttpServerModule: Module {
     }
         
     private func startServer(status: String, message: String) {
-        responses = [:];
         stopServer()
         if let port = port {
             var error: NSError?

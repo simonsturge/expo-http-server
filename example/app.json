@@ -16,7 +16,13 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "expo.modules.httpserver.example"
+      "bundleIdentifier": "expo.modules.httpserver.example",
+      "infoPlist": {
+        "UIBackgroundModes": ["remote-notification", "processing"],
+        "BGTaskSchedulerPermittedIdentifiers": [
+          "expo.modules.httpserver.example"
+        ]
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -27,6 +33,19 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true,
+            "extraMavenRepos": [
+              "../../node_modules/@notifee/react-native/android/libs"
+            ]
+          }
+        }
+      ]
+    ]
   }
 }
