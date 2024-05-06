@@ -53,7 +53,7 @@ public class ExpoHttpServerModule: Module {
                     "cookiesJson": req.cookies?.jsonString ?? "{}"
                 ])
             }
-        }, recursive: false, method: CRHTTPMethod.fromString(method))
+        }, recursive: true, method: CRHTTPMethod.fromString(method))
     }
     
     private func respondHandler(udid: String,
