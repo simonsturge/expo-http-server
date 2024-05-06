@@ -41,7 +41,7 @@ export interface Callback {
 export const start = () => {
   emitter.addListener<RequestEvent>("onRequest", async (event) => {
     const callbacks = requestCallbacks.filter(
-      (c) => event.path === c.path && event.method === c.method,
+      (c) => event.path.includes(c.path) && event.method === c.method,
     );
     if (!callbacks.length) {
       ExpoHttpServerModule.respond(
