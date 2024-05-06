@@ -18,6 +18,7 @@ class ExpoHttpServerModule : Module() {
                            val body: String)
 
   private var server: Server? = null;
+  private var started = false;
   private val responses = HashMap<String, SimpleHttpResponse>()
 
   private val requestHandler: RequestHandler = { request: Request, response: Response ->
@@ -70,11 +71,14 @@ class ExpoHttpServerModule : Module() {
           "message" to "Server not setup / port not configured"
         ))
       } else {
-        server?.start()
-        sendEvent("onStatusUpdate", bundleOf(
-          "status" to "STARTED",
-          "message" to "Server started"
-        ))
+        if (!started) {
+          started = true
+          server?.start()
+          sendEvent("onStatusUpdate", bundleOf(
+            "status" to "STARTED",
+            "message" to "Server started"
+          ))
+        }
       }
     }
 
@@ -86,6 +90,7 @@ class ExpoHttpServerModule : Module() {
     }
 
     Function("stop") {
+      started = false
       server?.close()
       sendEvent("onStatusUpdate", bundleOf(
         "status" to "STOPPED",
