@@ -34,10 +34,9 @@ public class ExpoHttpServerModule: Module {
         startServer(status: "STARTED", message: "Server started")
     }
     
-    private func routeHandler(path: String, method: String) {
+    private func routeHandler(path: String, method: String, uuid: String) {
         server.add(path, block: { (req, res, next) in
             DispatchQueue.main.async {
-                let uuid = UUID().uuidString
                 var bodyString = "{}"
                 if let body = req.body, let bodyData = try? JSONSerialization.data(withJSONObject: body) {
                     bodyString = String(data: bodyData, encoding: .utf8) ?? "{}"
@@ -53,7 +52,7 @@ public class ExpoHttpServerModule: Module {
                     "cookiesJson": req.cookies?.jsonString ?? "{}"
                 ])
             }
-        }, recursive: true, method: CRHTTPMethod.fromString(method))
+        }, recursive: false, method: CRHTTPMethod.fromString(method))
     }
     
     private func respondHandler(udid: String,

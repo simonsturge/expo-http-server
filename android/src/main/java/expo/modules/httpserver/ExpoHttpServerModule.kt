@@ -21,31 +21,6 @@ class ExpoHttpServerModule : Module() {
   private var started = false;
   private val responses = HashMap<String, SimpleHttpResponse>()
 
-  private val requestHandler: RequestHandler = { request: Request, response: Response ->
-    val uuid = UUID.randomUUID().toString()
-    val headers: Map<String, String> = request.headers()
-    val params: Map<String, String> = request.params()
-    val cookies: Map<String, String> = request.cookies().associate { it.name() to it.value() }
-    sendEvent("onRequest", bundleOf(
-      "uuid" to uuid,
-      "method" to request.method().name,
-      "path" to request.url(),
-      "body" to request.content(),
-      "headersJson" to JSONObject(headers).toString(),
-      "paramsJson" to JSONObject(params).toString(),
-      "cookiesJson" to JSONObject(cookies).toString(),
-    ))
-    while (!responses.containsKey(uuid)) {
-      Thread.sleep(10)
-    }
-    val res = responses[uuid]!!
-    responses.remove(uuid);
-    response.setBodyText(res.body)
-    response.setStatus(res.statusCode)
-    response.addHeader("Content-Length", "" + res.body.length)
-    response.addHeader("Content-Type", res.contentType)
-  }
-
   override fun definition() = ModuleDefinition {
 
     Name("ExpoHttpServer")
@@ -60,8 +35,30 @@ class ExpoHttpServerModule : Module() {
       }.build()
     }
 
-    Function("route") { path: String, method: String ->
-      server = server?.request(HttpMethod.getMethod(method), path, requestHandler);
+    Function("route") { path: String, method: String, uuid: String ->
+      server = server?.request(HttpMethod.getMethod(method), path) { request: Request, response: Response ->
+        val headers: Map<String, String> = request.headers()
+        val params: Map<String, String> = request.params()
+        val cookies: Map<String, String> = request.cookies().associate { it.name() to it.value() }
+        sendEvent("onRequest", bundleOf(
+          "uuid" to uuid,
+          "method" to request.method().name,
+          "path" to request.url(),
+          "body" to request.content(),
+          "headersJson" to JSONObject(headers).toString(),
+          "paramsJson" to JSONObject(params).toString(),
+          "cookiesJson" to JSONObject(cookies).toString(),
+        ))
+        while (!responses.containsKey(uuid)) {
+          Thread.sleep(10)
+        }
+        val res = responses[uuid]!!
+        responses.remove(uuid);
+        response.setBodyText(res.body)
+        response.setStatus(res.statusCode)
+        response.addHeader("Content-Length", "" + res.body.length)
+        response.addHeader("Content-Type", res.contentType)
+      };
     }
 
     Function("start") {

@@ -12,7 +12,7 @@ PODS:
     - ExpoModulesCore
   - ExpoFileSystem (16.0.5):
     - ExpoModulesCore
-  - ExpoHttpServer (0.1.6):
+  - ExpoHttpServer (0.1.10):
     - CocoaAsyncSocket
     - Criollo
     - ExpoModulesCore
@@ -1278,7 +1278,7 @@ SPEC CHECKSUMS:
   EXFont: 21b9c760abd593ce8f0d5386b558ced76018506f
   Expo: 49cded7844f2ec4ffb1cc3b86504853f26952935
   ExpoFileSystem: 04795dd4d47e76eaf12e38c92091f77d794f9e7f
-  ExpoHttpServer: 67e44d60492fb1c3f4bb52052b3f698a2dfef1d5
+  ExpoHttpServer: 4aafa23ae19817e28e6f9558f4705dde73f99d00
   ExpoKeepAwake: 0f5cad99603a3268e50af9a6eb8b76d0d9ac956c
   ExpoModulesCore: 96d1751929ad10622773bb729ab28a8423f0dd0c
   FBLazyVector: fbc4957d9aa695250b55d879c1d86f79d7e69ab4

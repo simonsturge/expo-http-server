@@ -35,32 +35,29 @@ export interface Response {
 export interface Callback {
   method: string;
   path: string;
+  uuid: string;
   callback: (request: RequestEvent) => Promise<Response>;
 }
 
 export const start = () => {
   emitter.addListener<RequestEvent>("onRequest", async (event) => {
-    const callbacks = requestCallbacks.filter(
-      (c) => event.path.includes(c.path) && event.method === c.method,
-    );
-    if (!callbacks.length) {
+    const responseHandler = requestCallbacks.find((c) => c.uuid === event.uuid);
+    if (!responseHandler) {
       ExpoHttpServerModule.respond(
         event.uuid,
-        200,
-        "No callback",
-        "No callback",
+        404,
+        "application/json",
+        JSON.stringify({ error: "Handler not found" }),
       );
       return;
     }
-    for (const c of callbacks) {
-      const response = await c.callback(event);
-      ExpoHttpServerModule.respond(
-        event.uuid,
-        response.statusCode || 200,
-        response.contentType || "application/json",
-        response.body || "{}",
-      );
-    }
+    const response = await responseHandler.callback(event);
+    ExpoHttpServerModule.respond(
+      event.uuid,
+      response.statusCode || 200,
+      response.contentType || "application/json",
+      response.body || "{}",
+    );
   });
   ExpoHttpServerModule.start();
 };
@@ -70,12 +67,14 @@ export const route = (
   method: HttpMethod,
   callback: (request: RequestEvent) => Promise<Response>,
 ) => {
+  const uuid = Math.random().toString(16).slice(2);
   requestCallbacks.push({
     method,
     path,
+    uuid,
     callback,
   });
-  ExpoHttpServerModule.route(path, method);
+  ExpoHttpServerModule.route(path, method, uuid);
 };
 
 export const setup = (
