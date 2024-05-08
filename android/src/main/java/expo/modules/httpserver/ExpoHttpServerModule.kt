@@ -4,17 +4,17 @@ import androidx.core.os.bundleOf
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import com.safframework.server.core.AndroidServer
-import com.safframework.server.core.RequestHandler
 import com.safframework.server.core.Server
 import com.safframework.server.core.http.HttpMethod
 import com.safframework.server.core.http.Request
 import com.safframework.server.core.http.Response
 import org.json.JSONObject
-import java.util.UUID
 
 class ExpoHttpServerModule : Module() {
   class SimpleHttpResponse(val statusCode: Int,
+                           val statusDescription: String,
                            val contentType: String,
+                           val headers: HashMap<String, String>,
                            val body: String)
 
   private var server: Server? = null;
@@ -53,11 +53,15 @@ class ExpoHttpServerModule : Module() {
           Thread.sleep(10)
         }
         val res = responses[uuid]!!
-        responses.remove(uuid);
         response.setBodyText(res.body)
         response.setStatus(res.statusCode)
         response.addHeader("Content-Length", "" + res.body.length)
         response.addHeader("Content-Type", res.contentType)
+        for ((key, value) in res.headers) {
+          response.addHeader(key, value)
+        }
+        responses.remove(uuid);
+        return@request response
       };
     }
 
@@ -81,9 +85,11 @@ class ExpoHttpServerModule : Module() {
 
     Function("respond") { uuid: String,
                           statusCode: Int,
+                          statusDescription: String,
                           contentType: String,
+                          headers: HashMap<String, String>,
                           body: String ->
-      responses[uuid] = SimpleHttpResponse(statusCode, contentType, body);
+      responses[uuid] = SimpleHttpResponse(statusCode, statusDescription, contentType, headers, body);
     }
 
     Function("stop") {

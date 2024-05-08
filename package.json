@@ -1,6 +1,6 @@
 {
 	"name": "expo-http-server",
-	"version": "0.1.10",
+	"version": "0.1.11",
 	"description": "A simple HTTP server expo module (iOS/Android)",
 	"main": "build/index.js",
 	"types": "build/index.d.ts",

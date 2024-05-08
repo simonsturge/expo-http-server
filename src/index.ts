@@ -28,7 +28,9 @@ export interface RequestEvent {
 
 export interface Response {
   statusCode?: number;
+  statusDescription?: string;
   contentType?: string;
+  headers?: Record<string, string>;
   body?: string;
 }
 
@@ -46,7 +48,9 @@ export const start = () => {
       ExpoHttpServerModule.respond(
         event.uuid,
         404,
+        "Not Found",
         "application/json",
+        {},
         JSON.stringify({ error: "Handler not found" }),
       );
       return;
@@ -55,7 +59,9 @@ export const start = () => {
     ExpoHttpServerModule.respond(
       event.uuid,
       response.statusCode || 200,
+      response.statusDescription || "OK",
       response.contentType || "application/json",
+      response.headers || {},
       response.body || "{}",
     );
   });

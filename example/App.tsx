@@ -58,6 +58,9 @@ export default function App() {
       onServerCalled();
       return {
         statusCode: 200,
+        headers: {
+          "Custom-Header": "Bazinga",
+        },
         contentType: "application/json",
         body: JSON.stringify(obj),
       };
@@ -67,6 +70,7 @@ export default function App() {
       onServerCalled();
       return {
         statusCode: 200,
+        statusDescription: "OK - CUSTOM STATUS",
         contentType: "text/html",
         body: html,
       };
