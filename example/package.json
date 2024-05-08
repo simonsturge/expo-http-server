@@ -6,7 +6,7 @@
     "prebuild": "npx expo prebuild --clean",
     "start": "expo start",
     "android": "expo run:android --device --variant release",
-    "ios": "expo run:ios --device --configuration release",
+    "ios": "expo run:ios --device",
     "web": "expo start --web"
   },
   "dependencies": {

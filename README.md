@@ -49,19 +49,23 @@ export default function App() {
       }
     });
     server.route("/", "GET", async (request) => {
-      console.log("Request", "/", "GET", JSON.stringify(request));
+      console.log("Request", "/", "GET", request);
       setLastCalled(Date.now());
       return {
         statusCode: 200,
+        headers: {
+          "Custom-Header": "Bazinga",
+        },
         contentType: "application/json",
         body: JSON.stringify(obj),
       };
     });
     server.route("/html", "GET", async (request) => {
-      console.log("Request", "/html", "GET", JSON.stringify(request));
+      console.log("Request", "/html", "GET", request);
       setLastCalled(Date.now());
       return {
         statusCode: 200,
+        statusDescription: "OK - CUSTOM STATUS",
         contentType: "text/html",
         body: html,
       };

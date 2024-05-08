@@ -57,13 +57,18 @@ public class ExpoHttpServerModule: Module {
     
     private func respondHandler(udid: String,
                                 statusCode: Int,
+                                statusDescription: String,
                                 contentType: String,
+                                headers: [String: String],
                                 body: String) {
         DispatchQueue.main.async {
             if let response = self.responses[udid] {
-                response.setStatusCode(UInt(statusCode), description: "ExpoHttpServer")
+                response.setStatusCode(UInt(statusCode), description: statusDescription)
                 response.setValue(contentType, forHTTPHeaderField: "Content-type")
                 response.setValue("\(body.count)", forHTTPHeaderField: "Content-Length")
+                for (key, value) in headers {
+                    response.setValue(value, forHTTPHeaderField: key)
+                }
                 response.send(body);
                 self.responses[udid] = nil;
             }
