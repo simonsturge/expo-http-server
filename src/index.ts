@@ -5,7 +5,7 @@ import ExpoHttpServerModule from "./ExpoHttpServerModule";
 const emitter = new EventEmitter(ExpoHttpServerModule);
 const requestCallbacks: Callback[] = [];
 
-export type HttpMethod = "GET" | "POST" | "PUT" | "DELETE";
+export type HttpMethod = "GET" | "POST" | "PUT" | "DELETE" | "OPTIONS";
 /**
  * PAUSED AND RESUMED are iOS only
  */
