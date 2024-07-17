@@ -9,6 +9,10 @@ import com.safframework.server.core.http.HttpMethod
 import com.safframework.server.core.http.Request
 import com.safframework.server.core.http.Response
 import org.json.JSONObject
+import java.io.IOException
+import expo.modules.kotlin.Promise
+import expo.modules.kotlin.exception.CodedException
+import java.util.UUID
 
 class ExpoHttpServerModule : Module() {
   class SimpleHttpResponse(val statusCode: Int,
@@ -27,12 +31,63 @@ class ExpoHttpServerModule : Module() {
 
     Events("onStatusUpdate", "onRequest")
 
-    Function("setup") { port: Int ->
-      server = AndroidServer.Builder{
-        port {
-          port
+    AsyncFunction("setup") { port: Int, promise: Promise ->
+      try {
+        server = AndroidServer.Builder{
+          port {
+            port
+          }
+        }.build()
+        promise.resolve("OK");
+      } catch(e : IOException) {
+        promise.reject(CodedException(e))
+      }
+    }
+
+    AsyncFunction("start") { promise: Promise ->
+      if(server == null) {
+        promise.reject(CodedException("Server not setup / port not configured"))
+        sendEvent("onStatusUpdate", bundleOf(
+          "status" to "ERROR",
+          "message" to "Server not setup / port not configured"
+        ))
+      } else {
+        try{
+          if(!started) {
+            started = true
+            server?.start()
+          }
+          sendEvent("onStatusUpdate", bundleOf(
+            "status" to "STARTED",
+            "message" to "Server started"
+          ))
+          promise.resolve("OK")
+        } catch(e: IOException) {
+          promise.reject(CodedException(e))
+          sendEvent("onStatusUpdate", bundleOf(
+            "status" to "ERROR",
+            "message" to e.message
+          ))
         }
-      }.build()
+      }
+    }
+
+    AsyncFunction("stop") { promise: Promise ->
+      try{
+        started = false
+        server?.close()
+        promise.resolve("OK");
+        sendEvent("onStatusUpdate", bundleOf(
+          "status" to "STOPPED",
+          "message" to "Server stopped"
+        ))
+      } catch(e: IOException) {
+        promise.reject(CodedException(e))
+        sendEvent("onStatusUpdate", bundleOf(
+          "status" to "ERROR",
+          "message" to e.message
+        ))
+      }
     }
 
     Function("route") { path: String, method: String, uuid: String ->
@@ -40,8 +95,10 @@ class ExpoHttpServerModule : Module() {
         val headers: Map<String, String> = request.headers()
         val params: Map<String, String> = request.params()
         val cookies: Map<String, String> = request.cookies().associate { it.name() to it.value() }
+        val requestId = UUID.randomUUID().toString()
         sendEvent("onRequest", bundleOf(
           "uuid" to uuid,
+          "requestId" to requestId,
           "method" to request.method().name,
           "path" to request.url(),
           "body" to request.content(),
@@ -49,10 +106,10 @@ class ExpoHttpServerModule : Module() {
           "paramsJson" to JSONObject(params).toString(),
           "cookiesJson" to JSONObject(cookies).toString(),
         ))
-        while (!responses.containsKey(uuid)) {
+        while (!responses.containsKey(requestId)) {
           Thread.sleep(10)
         }
-        val res = responses[uuid]!!
+        val res = responses[requestId]!!
         response.setBodyText(res.body)
         response.setStatus(res.statusCode)
         response.addHeader("Content-Length", "" + res.body.length)
@@ -60,45 +117,19 @@ class ExpoHttpServerModule : Module() {
         for ((key, value) in res.headers) {
           response.addHeader(key, value)
         }
-        responses.remove(uuid);
+        responses.remove(requestId);
         return@request response
       };
     }
 
-    Function("start") {
-      if (server == null) {
-        sendEvent("onStatusUpdate", bundleOf(
-          "status" to "ERROR",
-          "message" to "Server not setup / port not configured"
-        ))
-      } else {
-        if (!started) {
-          started = true
-          server?.start()
-          sendEvent("onStatusUpdate", bundleOf(
-            "status" to "STARTED",
-            "message" to "Server started"
-          ))
-        }
-      }
-    }
-
-    Function("respond") { uuid: String,
+    Function("respond") {
+                          requestId: String,
                           statusCode: Int,
                           statusDescription: String,
                           contentType: String,
                           headers: HashMap<String, String>,
                           body: String ->
-      responses[uuid] = SimpleHttpResponse(statusCode, statusDescription, contentType, headers, body);
-    }
-
-    Function("stop") {
-      started = false
-      server?.close()
-      sendEvent("onStatusUpdate", bundleOf(
-        "status" to "STOPPED",
-        "message" to "Server stopped"
-      ))
+      responses[requestId] = SimpleHttpResponse(statusCode, statusDescription, contentType, headers, body);
     }
   }
 }
