@@ -154,6 +154,8 @@ extension CRHTTPMethod {
             return "PUT"
         case .delete:
             return "DELETE"
+        case .options:
+            return "OPTIONS"
         default:
             return "GET"
         }
@@ -168,6 +170,8 @@ extension CRHTTPMethod {
             httpMethod = .put
         case "DELETE":
             httpMethod = .delete
+        case "OPTIONS":
+            httpMethod = .options
         default:
             httpMethod = .get
         }
