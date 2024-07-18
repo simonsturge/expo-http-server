@@ -18,7 +18,6 @@ export interface StatusEvent {
 
 export interface RequestEvent {
   uuid: string;
-  requestId: string;
   method: string;
   path: string;
   body: string;
@@ -42,12 +41,12 @@ export interface Callback {
   callback: (request: RequestEvent) => Promise<Response>;
 }
 
-export const start = async () => {
+export const start = () => {
   emitter.addListener<RequestEvent>("onRequest", async (event) => {
     const responseHandler = requestCallbacks.find((c) => c.uuid === event.uuid);
     if (!responseHandler) {
       ExpoHttpServerModule.respond(
-        event.requestId,
+        event.uuid,
         404,
         "Not Found",
         "application/json",
@@ -58,7 +57,7 @@ export const start = async () => {
     }
     const response = await responseHandler.callback(event);
     ExpoHttpServerModule.respond(
-      event.requestId,
+      event.uuid,
       response.statusCode || 200,
       response.statusDescription || "OK",
       response.contentType || "application/json",
@@ -66,7 +65,7 @@ export const start = async () => {
       response.body || "{}",
     );
   });
-  return ExpoHttpServerModule.start() as string;
+  ExpoHttpServerModule.start();
 };
 
 export const route = (
@@ -84,7 +83,7 @@ export const route = (
   ExpoHttpServerModule.route(path, method, uuid);
 };
 
-export const setup = async (
+export const setup = (
   port: number,
   onStatusUpdate?: (event: StatusEvent) => void,
 ) => {
@@ -93,7 +92,7 @@ export const setup = async (
       onStatusUpdate(event);
     });
   }
-  return ExpoHttpServerModule.setup(port) as string;
+  ExpoHttpServerModule.setup(port);
 };
 
-export const stop = async () => ExpoHttpServerModule.stop() as string;
+export const stop = () => ExpoHttpServerModule.stop();
