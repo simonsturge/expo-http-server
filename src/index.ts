@@ -18,6 +18,7 @@ export interface StatusEvent {
 
 export interface RequestEvent {
   uuid: string;
+  requestId: string;
   method: string;
   path: string;
   body: string;
@@ -46,7 +47,7 @@ export const start = () => {
     const responseHandler = requestCallbacks.find((c) => c.uuid === event.uuid);
     if (!responseHandler) {
       ExpoHttpServerModule.respond(
-        event.uuid,
+        event.requestId,
         404,
         "Not Found",
         "application/json",
@@ -57,7 +58,7 @@ export const start = () => {
     }
     const response = await responseHandler.callback(event);
     ExpoHttpServerModule.respond(
-      event.uuid,
+      event.requestId,
       response.statusCode || 200,
       response.statusDescription || "OK",
       response.contentType || "application/json",

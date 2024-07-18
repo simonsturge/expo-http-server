@@ -1,5 +1,6 @@
 import ExpoModulesCore
 import Criollo
+import Foundation
 
 public class ExpoHttpServerModule: Module {
     private let server = CRHTTPServer()
@@ -41,9 +42,11 @@ public class ExpoHttpServerModule: Module {
                 if let body = req.body, let bodyData = try? JSONSerialization.data(withJSONObject: body) {
                     bodyString = String(data: bodyData, encoding: .utf8) ?? "{}"
                 }
-                self.responses[uuid] = res
+                let requestId = UUID().uuidString
+                self.responses[requestId] = res
                 self.sendEvent("onRequest", [
                     "uuid": uuid,
+                    "requestId": requestId,
                     "method": req.method.toString(),
                     "path": path,
                     "body": bodyString,
@@ -55,14 +58,14 @@ public class ExpoHttpServerModule: Module {
         }, recursive: false, method: CRHTTPMethod.fromString(method))
     }
     
-    private func respondHandler(udid: String,
+    private func respondHandler(requestId: String,
                                 statusCode: Int,
                                 statusDescription: String,
                                 contentType: String,
                                 headers: [String: String],
                                 body: String) {
         DispatchQueue.main.async {
-            if let response = self.responses[udid] {
+            if let response = self.responses[requestId] {
                 response.setStatusCode(UInt(statusCode), description: statusDescription)
                 response.setValue(contentType, forHTTPHeaderField: "Content-type")
                 response.setValue("\(body.count)", forHTTPHeaderField: "Content-Length")
@@ -70,7 +73,7 @@ public class ExpoHttpServerModule: Module {
                     response.setValue(value, forHTTPHeaderField: key)
                 }
                 response.send(body);
-                self.responses[udid] = nil;
+                self.responses[requestId] = nil;
             }
         }
        
