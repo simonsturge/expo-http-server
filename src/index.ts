@@ -4,6 +4,7 @@ import ExpoHttpServerModule from "./ExpoHttpServerModule";
 
 const emitter = new EventEmitter(ExpoHttpServerModule);
 const requestCallbacks: Callback[] = [];
+let requestSubscription: ReturnType<typeof emitter.addListener> | null = null;
 
 export type HttpMethod = "GET" | "POST" | "PUT" | "DELETE" | "OPTIONS";
 /**
@@ -42,28 +43,31 @@ export interface Callback {
 }
 
 export const start = () => {
-  emitter.addListener<RequestEvent>("onRequest", async (event) => {
-    const responseHandler = requestCallbacks.find((c) => c.uuid === event.uuid);
-    if (!responseHandler) {
+  requestSubscription?.remove();
+  requestSubscription = emitter.addListener<RequestEvent>("onRequest", async (event) => {
+    try {
+      const responseHandler = requestCallbacks.find((c) => c.uuid === event.uuid);
+      if (!responseHandler) {
+        ExpoHttpServerModule.respond(
+          event.uuid,
+          404,
+          "Not Found",
+          "application/json",
+          {},
+          JSON.stringify({ error: "Handler not found" }),
+        );
+        return;
+      }
+      const response = await responseHandler.callback(event);
       ExpoHttpServerModule.respond(
         event.uuid,
-        404,
-        "Not Found",
-        "application/json",
-        {},
-        JSON.stringify({ error: "Handler not found" }),
+        response.statusCode || 200,
+        response.statusDescription || "OK",
+        response.contentType || "application/json",
+        response.headers || {},
+        response.body || "{}",
       );
-      return;
-    }
-    const response = await responseHandler.callback(event);
-    ExpoHttpServerModule.respond(
-      event.uuid,
-      response.statusCode || 200,
-      response.statusDescription || "OK",
-      response.contentType || "application/json",
-      response.headers || {},
-      response.body || "{}",
-    );
+    } catch {}
   });
   ExpoHttpServerModule.start();
 };
@@ -89,10 +93,16 @@ export const setup = (
 ) => {
   if (onStatusUpdate) {
     emitter.addListener<StatusEvent>("onStatusUpdate", async (event) => {
-      onStatusUpdate(event);
+      try {
+        await onStatusUpdate(event);
+      } catch {}
     });
   }
   ExpoHttpServerModule.setup(port);
 };
 
-export const stop = () => ExpoHttpServerModule.stop();
+export const stop = () => {
+  requestSubscription?.remove();
+  requestSubscription = null;
+  ExpoHttpServerModule.stop();
+};
