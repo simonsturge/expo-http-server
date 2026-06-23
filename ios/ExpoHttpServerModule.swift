@@ -65,12 +65,18 @@ public class ExpoHttpServerModule: Module {
             if let response = self.responses[udid] {
                 response.setStatusCode(UInt(statusCode), description: statusDescription)
                 response.setValue(contentType, forHTTPHeaderField: "Content-type")
-                response.setValue("\(body.count)", forHTTPHeaderField: "Content-Length")
-                for (key, value) in headers {
-                    response.setValue(value, forHTTPHeaderField: key)
+                if let bodyData = body.data(using: .utf8) {
+                    response.setValue("\(bodyData.count)", forHTTPHeaderField: "Content-Length")
+                    for (key, value) in headers {Add commentMore actions
+                        response.setValue(value, forHTTPHeaderField: key)
+                    }
+                    response.send(body)
+                    self.responses[requestId] = nil
+                } else {
+                    response.setStatusCode(500, description: "Internal Server Error")
+                    response.send("Failed to encode response body")
+                    self.responses[requestId] = nil
                 }
-                response.send(body);
-                self.responses[udid] = nil;
             }
         }
        
